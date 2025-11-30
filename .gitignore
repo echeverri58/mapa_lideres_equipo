@@ -1,0 +1,12 @@
+# Archivos de sistema
+Thumbs.db
+Desktop.ini
+
+# Archivos temporales del proyecto
+*.py
+geojson_info.txt
+*.log
+
+# IDEs
+.vscode/
+.idea/
