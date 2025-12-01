@@ -171,9 +171,8 @@ let heatmapLayer;
 // Cargar Medellín
 if (typeof medellinData !== 'undefined') {
     medellinLayer = createGeoJsonLayer(medellinData, "Medellín");
-    // No agregamos al mapa por defecto si el usuario quiere activarlas manualmente, 
-    // pero generalmente es mejor mostrar al menos una. Las mostraré ambas por defecto.
-    medellinLayer.addTo(map);
+    // No agregamos al mapa por defecto para que inicien desactivadas
+    // medellinLayer.addTo(map);
 
     // Crear capa de mapa de calor (solo para Medellín por ahora, ya que ahí están los datos)
     heatmapLayer = L.geoJSON(medellinData, {
@@ -247,7 +246,7 @@ if (typeof medellinData !== 'undefined') {
 // Cargar Bello
 if (typeof belloData !== 'undefined') {
     belloLayer = createGeoJsonLayer(belloData, "Bello");
-    belloLayer.addTo(map);
+    // belloLayer.addTo(map);
 } else {
     console.error('Error: belloData no definido.');
 }
