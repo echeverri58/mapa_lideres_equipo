@@ -164,9 +164,18 @@ function createGeoJsonLayer(data, layerName) {
 }
 
 // Crear capas
+// Crear capas
 let medellinLayer;
 let belloLayer;
 let heatmapLayer;
+let puestosLayer;
+
+// Control de capas inicial
+const baseMaps = {
+    "OpenStreetMap": osm
+};
+const overlayMaps = {};
+let layerControl;
 
 // Cargar Medellín
 if (typeof medellinData !== 'undefined') {
@@ -174,30 +183,21 @@ if (typeof medellinData !== 'undefined') {
     // No agregamos al mapa por defecto para que inicien desactivadas
     // medellinLayer.addTo(map);
 
-    // Crear capa de mapa de calor (solo para Medellín por ahora, ya que ahí están los datos)
+    // Crear capa de mapa de calor
     heatmapLayer = L.geoJSON(medellinData, {
         style: heatmapStyle,
         onEachFeature: function (feature, layer) {
             let count = getLeaderCount(feature);
             let name = feature.properties.NOMBRE || "Comuna";
-
-            // Reutilizamos la lógica de popup existente o creamos una simple
             let popupContent = `<strong>${name}</strong><br>Líderes: ${count}`;
-
-            // Si queremos ver la lista completa también en el mapa de calor:
-            if (count > 0 && typeof lideresData !== 'undefined') {
-                // Recalcular líderes para la lista (podríamos refactorizar para no repetir, pero por simplicidad:)
-                // ... (lógica simplificada, asumiendo que getLeaderCount ya validó existencia)
-                // Para el popup detallado, mejor usamos la misma lógica de createGeoJsonLayer o simplemente mostramos cantidad.
-                // El usuario pidió "ver en que comuna tenemos mas lideres", la cantidad es clave.
-            }
 
             layer.bindTooltip(`${name}<br>(${count} líderes)`, {
                 permanent: true,
                 direction: "center",
                 className: "commune-label"
             });
-            // Copiamos la lógica de popup completa para que sea útil
+
+            // Lógica de popup detallado (reutilizada)
             let identificacion = feature.properties.IDENTIFICACION || name;
             if (typeof lideresData !== 'undefined') {
                 let lideres = null;
@@ -216,7 +216,6 @@ if (typeof medellinData !== 'undefined') {
                     });
                     if (matchKey) lideres = lideresData[matchKey];
                 }
-                // Fallback
                 if (!lideres) {
                     let featureId = (identificacion || "").toUpperCase();
                     lideres = lideresData[featureId];
@@ -235,10 +234,15 @@ if (typeof medellinData !== 'undefined') {
                     lideres.forEach(l => listContent += `<li>${l}</li>`);
                     listContent += `</ul></div>`;
                     layer.bindPopup(listContent);
+                } else {
+                    layer.bindPopup(popupContent);
                 }
             }
         }
     });
+
+    overlayMaps["Comunas Medellín"] = medellinLayer;
+    overlayMaps["Mapa de Calor Líderes"] = heatmapLayer;
 } else {
     console.error('Error: medellinData no definido.');
 }
@@ -246,24 +250,37 @@ if (typeof medellinData !== 'undefined') {
 // Cargar Bello
 if (typeof belloData !== 'undefined') {
     belloLayer = createGeoJsonLayer(belloData, "Bello");
-    // belloLayer.addTo(map);
+    overlayMaps["Comunas Bello"] = belloLayer;
 } else {
     console.error('Error: belloData no definido.');
 }
 
-// Control de capas
-const baseMaps = {
-    "OpenStreetMap": osm
-};
+// Cargar Puestos de Votación (desde KMZ convertido)
+if (typeof puestosData !== 'undefined') {
+    puestosLayer = L.geoJSON(puestosData, {
+        pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, {
+                radius: 5,
+                fillColor: "#3388ff",
+                color: "#000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
+        },
+        onEachFeature: function (feature, layer) {
+            let p = feature.properties;
+            let content = `<strong>${p.name}</strong>`;
+            if (p.description) {
+                content += `<br><div style="max-height:150px; overflow:auto;">${p.description}</div>`;
+            }
+            layer.bindPopup(content);
+        }
+    });
 
-const overlayMaps = {};
-
-if (medellinLayer) {
-    overlayMaps["Comunas Medellín"] = medellinLayer;
-    overlayMaps["Mapa de Calor Líderes"] = heatmapLayer;
+    overlayMaps["Puestos de Votación"] = puestosLayer;
+    // puestosLayer.addTo(map); // Desactivado por defecto
 }
-if (belloLayer) {
-    overlayMaps["Comunas Bello"] = belloLayer;
-}
 
-L.control.layers(baseMaps, overlayMaps).addTo(map);
+// Crear control de capas
+layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
