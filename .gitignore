@@ -10,3 +10,9 @@ geojson_info.txt
 # IDEs
 .vscode/
 .idea/
+
+!convert_puestos.py
+
+!inspect_kmz.py
+
+!convert_kmz.py

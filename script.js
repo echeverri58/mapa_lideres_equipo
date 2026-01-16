@@ -243,6 +243,56 @@ if (typeof medellinData !== 'undefined') {
 
     overlayMaps["Comunas Medellín"] = medellinLayer;
     overlayMaps["Mapa de Calor Líderes"] = heatmapLayer;
+
+    // --- Votos Juancho Heatmap ---
+    function getJuanchoVoteCount(feature) {
+        if (typeof juanchoVotesData === 'undefined' || !feature.properties.CODIGO) {
+            return 0;
+        }
+        return juanchoVotesData[feature.properties.CODIGO] || 0;
+    }
+
+    function getJuanchoHeatmapColor(d) {
+        return d > 300 ? '#005a32' :
+               d > 250 ? '#238b45' :
+               d > 200 ? '#41ab5d' :
+               d > 150 ? '#74c476' :
+               d > 100 ? '#a1d99b' :
+               d > 50  ? '#c7e9c0' :
+               d > 0   ? '#e5f5e0' :
+                         '#f7fcf5';
+    }
+
+    function juanchoHeatmapStyle(feature) {
+        return {
+            fillColor: getJuanchoHeatmapColor(getJuanchoVoteCount(feature)),
+            weight: 2,
+            opacity: 1,
+            color: 'white',
+            dashArray: '3',
+            fillOpacity: 0.7
+        };
+    }
+    
+    const juanchoHeatmapLayer = L.geoJSON(medellinData, {
+        style: juanchoHeatmapStyle,
+        onEachFeature: function (feature, layer) {
+            const count = getJuanchoVoteCount(feature);
+            const name = feature.properties.NOMBRE || "Comuna";
+            const popupContent = `<strong>${name}</strong><br>Votos: ${count}`;
+
+            layer.bindTooltip(`${name}<br>(${count} votos)`, {
+                permanent: true,
+                direction: "center",
+                className: "commune-label"
+            });
+            layer.bindPopup(popupContent);
+        }
+    });
+
+    overlayMaps["Votos Juancho Medellín"] = juanchoHeatmapLayer;
+    // --- End Votos Juancho Heatmap ---
+
 } else {
     console.error('Error: medellinData no definido.');
 }
@@ -281,6 +331,32 @@ if (typeof puestosData !== 'undefined') {
     overlayMaps["Puestos de Votación"] = puestosLayer;
     // puestosLayer.addTo(map); // Desactivado por defecto
 }
+
+// --- Votos Nacional Marker ---
+if (typeof medellinData !== 'undefined') {
+    const laurelesFeature = medellinData.features.find(f => f.properties.CODIGO === '11');
+    if (laurelesFeature) {
+        // Create a temporary layer to calculate the center
+        const tempLayer = L.geoJSON(laurelesFeature);
+        const center = tempLayer.getBounds().getCenter();
+
+        const nacionalVotesMarker = L.circleMarker(center, {
+            radius: 8,
+            fillColor: "#ff00ff", // Magenta color to stand out
+            color: "#000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        });
+
+        nacionalVotesMarker.bindPopup("<strong>Votos Nacional: 77</strong>");
+
+        const nacionalLayer = L.layerGroup([nacionalVotesMarker]);
+        overlayMaps["Votos Nacional"] = nacionalLayer;
+    }
+}
+// --- End Votos Nacional Marker ---
+
 
 // Crear control de capas
 layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
