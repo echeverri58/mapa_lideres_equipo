@@ -254,13 +254,13 @@ if (typeof medellinData !== 'undefined') {
 
     function getJuanchoHeatmapColor(d) {
         return d > 300 ? '#005a32' :
-               d > 250 ? '#238b45' :
-               d > 200 ? '#41ab5d' :
-               d > 150 ? '#74c476' :
-               d > 100 ? '#a1d99b' :
-               d > 50  ? '#c7e9c0' :
-               d > 0   ? '#e5f5e0' :
-                         '#f7fcf5';
+            d > 250 ? '#238b45' :
+                d > 200 ? '#41ab5d' :
+                    d > 150 ? '#74c476' :
+                        d > 100 ? '#a1d99b' :
+                            d > 50 ? '#c7e9c0' :
+                                d > 0 ? '#e5f5e0' :
+                                    '#f7fcf5';
     }
 
     function juanchoHeatmapStyle(feature) {
@@ -273,7 +273,7 @@ if (typeof medellinData !== 'undefined') {
             fillOpacity: 0.7
         };
     }
-    
+
     const juanchoHeatmapLayer = L.geoJSON(medellinData, {
         style: juanchoHeatmapStyle,
         onEachFeature: function (feature, layer) {
@@ -292,6 +292,74 @@ if (typeof medellinData !== 'undefined') {
 
     overlayMaps["Votos Juancho Medellín"] = juanchoHeatmapLayer;
     // --- End Votos Juancho Heatmap ---
+
+    // --- Apoyos León Heatmap (Consolidado BD) ---
+    function getApoyosLeonCount(feature) {
+        if (typeof apoyosLeonData === 'undefined' || !feature.properties.CODIGO) {
+            return 0;
+        }
+        return apoyosLeonData[feature.properties.CODIGO] || 0;
+    }
+
+    function getApoyosLeonColor(d) {
+        return d > 250 ? '#800026' :
+            d > 200 ? '#bd0026' :
+                d > 150 ? '#e31a1c' :
+                    d > 100 ? '#fc4e2a' :
+                        d > 50 ? '#fd8d3c' :
+                            d > 25 ? '#feb24c' :
+                                d > 0 ? '#fed976' :
+                                    '#ffeda0';
+    }
+
+    function apoyosLeonStyle(feature) {
+        return {
+            fillColor: getApoyosLeonColor(getApoyosLeonCount(feature)),
+            weight: 2,
+            opacity: 1,
+            color: 'white',
+            dashArray: '3',
+            fillOpacity: 0.7
+        };
+    }
+
+    const apoyosLeonMainLayer = L.geoJSON(medellinData, {
+        style: apoyosLeonStyle,
+        onEachFeature: function (feature, layer) {
+            const count = getApoyosLeonCount(feature);
+            const name = feature.properties.NOMBRE || "Comuna";
+            const popupContent = `<strong>${name}</strong><br>Apoyos: ${count}`;
+
+            layer.bindTooltip(`${name}<br>(${count} apoyos)`, {
+                permanent: true,
+                direction: "center",
+                className: "commune-label"
+            });
+            layer.bindPopup(popupContent);
+        }
+    });
+
+    // Marcador para "Medellín General" (Datos sin comuna específica)
+    let apoyosLeonLayer;
+    if (typeof apoyosLeonMedellinGeneral !== 'undefined' && apoyosLeonMedellinGeneral > 0) {
+        const generalMarker = L.circleMarker([6.2442, -75.5709], { // Cerca de La Alpujarra
+            radius: 10,
+            fillColor: "#ff0000",
+            color: "#000",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+        });
+        generalMarker.bindPopup(`<strong>Medellín General</strong><br>Apoyos sin comuna: ${apoyosLeonMedellinGeneral}`);
+        generalMarker.bindTooltip("General: " + apoyosLeonMedellinGeneral, { permanent: true, direction: "top" });
+
+        apoyosLeonLayer = L.layerGroup([apoyosLeonMainLayer, generalMarker]);
+    } else {
+        apoyosLeonLayer = apoyosLeonMainLayer;
+    }
+
+    overlayMaps["Apoyos León - Consolidado BD"] = apoyosLeonLayer;
+    // --- End Apoyos León Heatmap ---
 
 } else {
     console.error('Error: medellinData no definido.');
