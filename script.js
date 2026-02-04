@@ -361,6 +361,53 @@ if (typeof medellinData !== 'undefined') {
     overlayMaps["Apoyos León - Consolidado BD"] = apoyosLeonLayer;
     // --- End Apoyos León Heatmap ---
 
+    // --- Otros Municipios Antioquia Heatmap ---
+    if (typeof antioquiaMunicipiosData !== 'undefined') {
+
+        function getAntioquiaColor(d) {
+            return d > 50 ? '#800026' :
+                d > 30 ? '#BD0026' :
+                    d > 20 ? '#E31A1C' :
+                        d > 10 ? '#FC4E2A' :
+                            d > 5 ? '#FD8D3C' :
+                                d > 0 ? '#FEB24C' :
+                                    '#FFEDA0';
+        }
+
+        // Calculate radius based on count
+        function getAntioquiaRadius(d) {
+            // Base radius 5 + scaled increment
+            return 5 + (Math.sqrt(d) * 3);
+        }
+
+        const antioquiaLayer = L.geoJSON(antioquiaMunicipiosData, {
+            pointToLayer: function (feature, latlng) {
+                const count = feature.properties.count;
+                return L.circleMarker(latlng, {
+                    radius: getAntioquiaRadius(count),
+                    fillColor: getAntioquiaColor(count),
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+            },
+            onEachFeature: function (feature, layer) {
+                const p = feature.properties;
+                const popupContent = `<strong>${p.nombre}</strong><br>Apoyos: ${p.count}`;
+                layer.bindPopup(popupContent);
+                layer.bindTooltip(`${p.nombre} (${p.count})`, {
+                    direction: "top",
+                    offset: [0, -10]
+                });
+            }
+        });
+
+        overlayMaps["Otros Municipios Antioquia"] = antioquiaLayer;
+        // Optional: antioquiaLayer.addTo(map); 
+    }
+    // --- End Otros Municipios Antioquia Heatmap ---
+
 } else {
     console.error('Error: medellinData no definido.');
 }
